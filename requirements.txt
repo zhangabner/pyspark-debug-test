@@ -1,0 +1,15 @@
+pyspark == 2.4.5
+ipython
+ipykernel == 5.3.4
+jupyter == 1.0.0
+pandas == 1.0.5
+pyarrow == 1.0.1
+pytest
+pytest-spark
+farsante == 0.1.0
+quinn == 0.8.0
+chispa == 0.4.0
+ceja
+toree
+jupyter_client==4.4.0
+tornado==4.5.3

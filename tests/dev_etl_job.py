@@ -184,8 +184,6 @@ expected_avg_steps = (
 # act
 data_transformed = transform_data(input_data, 21)
 
-input_data.show(5)
-data_transformed.show(5)
 
 
 cols = len(expected_data.columns)
@@ -195,6 +193,8 @@ avg_steps = (
     .agg(mean('steps_to_desk').alias('avg_steps_to_desk'))
     .collect()[0]
     ['avg_steps_to_desk'])
+input_data.show(5)
+data_transformed.show(5)
 
 # assert
 # assertEqual(expected_cols, cols)

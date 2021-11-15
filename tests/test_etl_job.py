@@ -25,7 +25,7 @@ class SparkETLTests(unittest.TestCase):
         """
         self.config = json.loads("""{"steps_per_floor": 21}""")
         self.spark, *_ = start_spark()
-        self.test_data_path = 'tests/test_data/'
+        self.test_data_path = 'test_data/'
 
     def tearDown(self):
         """Stop Spark
