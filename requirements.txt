@@ -12,4 +12,4 @@ chispa == 0.4.0
 ceja
 toree
 jupyter_client==4.4.0
-tornado==4.5.3
+tornado==5.0

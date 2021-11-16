@@ -115,5 +115,25 @@ $SPARK_HOME/bin/spark-submit \
 --packages 'com.somesparkjar.dependency:1.0.0' \
 debugtest.py
 
-pip3 install pyspark==2.4.5
 
+python3 -m pip install --upgrade pip
+python3 -m pip install jupyter
+pip3 install toree==0.2.0 
+
+toree support pyspark only on 0.2.0
+https://toree.apache.org/docs/current/user/quick-start/
+
+but can't run pyspar, with error  python 2
+
+export PYSPARK_PYTHON=python3.6
+PYSPARK_PYTHON=/usr/bin/python3
+
+
+
+jupyter toree install --spark_home /opt/spark/ --interpreters=Scala,PySpark,SQL --user
+
+jupyter notebook
+
+/home/u18/pyspark-debug-test/pysparktestingexample/notebooks/scala_parquet.ipynb
+
+scala is ok, for check data source, and do some critical UDF
