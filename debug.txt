@@ -116,24 +116,13 @@ $SPARK_HOME/bin/spark-submit \
 debugtest.py
 
 
-python3 -m pip install --upgrade pip
-python3 -m pip install jupyter
-pip3 install toree==0.2.0 
-
-toree support pyspark only on 0.2.0
-https://toree.apache.org/docs/current/user/quick-start/
-
-but can't run pyspar, with error  python 2
-
-export PYSPARK_PYTHON=python3.6
-PYSPARK_PYTHON=/usr/bin/python3
-
-
-
-jupyter toree install --spark_home /opt/spark/ --interpreters=Scala,PySpark,SQL --user
-
-jupyter notebook
-
-/home/u18/pyspark-debug-test/pysparktestingexample/notebooks/scala_parquet.ipynb
-
-scala is ok, for check data source, and do some critical UDF
+E           chispa.dataframe_comparer.SchemasNotEqualError: 
+E           +------------------------------------------+------------------------------------------+
+E           |                 schema1                  |                 schema2                  |
+E           +------------------------------------------+------------------------------------------+
+E           | StructField(second_name,StringType,true) | StructField(second_name,StringType,true) |
+E           |      StructField(id,LongType,true)       |      StructField(id,LongType,true)       |
+E           |     StructField(floor,LongType,true)     |     StructField(floor,LongType,true)     |
+E           | StructField(first_name,StringType,true)  | StructField(first_name,StringType,true)  |
+E           +------------------------------------------+------------------------------------------+
+didn't show schema2 has one more column age
