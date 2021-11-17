@@ -72,7 +72,7 @@ def extract_data(spark):
     df = (
         spark
         .read
-        .parquet('tests/test_data/employees'))
+        .parquet('test_data/employees'))
 
     return df
 

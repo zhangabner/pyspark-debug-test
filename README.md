@@ -20,17 +20,16 @@ root/
  |   |-- spark.py
  |-- jobs/
  |   |-- etl_job.py
+      -- udf_functions.py
  |-- tests/
  |   |-- test_data/
  |   |-- | -- employees/
  |   |-- | -- employees_report/
- |   |-- test_etl_job.py
-
-
+      -- test_udf_functions.py remove_non_word_characters  testcase1   testcase2
+                               sort_columns sort_columns_asc sort_columns_desc
+ |   |-- test_etl_job.py   extract_data,test transform_data
  |   build_dependencies.sh
  |   packages.zip
- |   Pipfile
- |   Pipfile.lock
 ```
 java8
 python3.6
@@ -38,11 +37,9 @@ spark2.4.5
 
 debug
 
-peotry 
+
 
 The main Python module containing the ETL job (which will be sent to the Spark cluster), is `jobs/etl_job.py`. Any external configuration parameters required by `etl_job.py` are stored in JSON format in `configs/etl_config.json`. Additional modules that support this job can be kept in the `dependencies` folder (more on this later).  Unit test modules are kept in the `tests` folder and small chunks of representative input and output data, to be used with the tests, are kept in `tests/test_data` folder.
-poetry install 
-peotry run pytest
 
 
 ## Structure of an ETL Job
@@ -65,6 +62,8 @@ config = json.loads("""{"field": "value"}""")
 
 For the exact details of how the configuration file is located, opened and parsed, please see the `start_spark()` function in `dependencies/spark.py` (also discussed further below), which in addition to parsing the configuration file sent to Spark (and returning it as a Python dictionary), also launches the Spark driver program (the application) on the cluster and retrieves the Spark logger at the same time.
 
+
+
 ## Packaging ETL Job Dependencies
 
 In this project, functions that can be used across different ETL jobs are kept in a module called `dependencies` and referenced in specific job modules using, for example,
@@ -80,8 +79,6 @@ This package, together with any additional dependencies referenced within it, mu
 3. a combination of manually copying new modules (e.g. `dependencies`) to the Python path of each node and using `pip3 install` for additional dependencies (e.g. for `requests`).
 
 Option (1) is by far the easiest and most flexible approach, so we will make use of this for now. To make this task easier, especially when modules such as `dependencies` have additional dependencies (e.g. the `requests` package), we have provided the `build_dependencies.sh` bash script for automating the production of `packages.zip`, given a list of dependencies documented in `Pipfile` and managed by the `pipenv` python application (discussed below).
-
-
 
 
 In the project's root we include `build_dependencies.sh`, which is a bash script for building these dependencies into a zip-file to be sent to the cluster (`packages.zip`).
@@ -109,6 +106,7 @@ Briefly, the options supplied serve the following purposes:
 
 Full details of all possible options can be found [here](http://spark.apache.org/docs/latest/submitting-applications.html). Note, that we have left some options to be defined within the job (which is actually a Spark application) - e.g. `spark.cores.max` and `spark.executor.memory` are defined in the Python script as it is felt that the job should explicitly contain the requests for the required cluster resources.
 
+
 ## Debugging Spark Jobs Using `start_spark`
 
 It is not practical to test and debug Spark jobs by sending them to a cluster using `spark-submit` and examining stack traces for clues on what went wrong. A more productive workflow is to use an interactive console session (e.g. IPython) or a debugger (e.g. the `pdb` package in the Python standard library or the Python debugger in Visual Studio Code). In practice, however, it can be hard to test and debug Spark jobs in this way, as they implicitly rely on arguments that are sent to `spark-submit`, which are not available in a console or debug session.
@@ -119,42 +117,6 @@ We wrote the `start_spark` function - found in `dependencies/spark.py` - to faci
 def start_spark(app_name='my_spark_app', master='local[*]', jar_packages=[],
                 files=[], spark_config={}):
     """Start Spark session, get Spark logger and load config files.
-
-    Start a Spark session on the worker node and register the Spark
-    application with the cluster. Note, that only the app_name argument
-    will apply when this is called from a script sent to spark-submit.
-    All other arguments exist solely for testing the script from within
-    an interactive Python console.
-
-    This function also looks for a file ending in 'config.json' that
-    can be sent with the Spark job. If it is found, it is opened,
-    the contents parsed (assuming it contains valid JSON for the ETL job
-    configuration) into a dict of ETL job configuration parameters,
-    which are returned as the last element in the tuple returned by
-    this function. If the file cannot be found then the return tuple
-    only contains the Spark session and Spark logger objects and None
-    for config.
-
-    The function checks the enclosing environment to see if it is being
-    run from inside an interactive console session or from an
-    environment which has a `DEBUG` environment variable set (e.g.
-    setting `DEBUG=1` as an environment variable as part of a debug
-    configuration within an IDE such as Visual Studio Code or PyCharm.
-    In this scenario, the function uses all available function arguments
-    to start a PySpark driver from the local PySpark package as opposed
-    to using the spark-submit and Spark cluster defaults. This will also
-    use local module imports, as opposed to those in the zip archive
-    sent to spark via the --py-files flag in spark-submit.
-
-    :param app_name: Name of Spark app.
-    :param master: Cluster connection details (defaults to local[*]).
-    :param jar_packages: List of Spark JAR package names.
-    :param files: List of files to send to Spark cluster (master and
-        workers).
-    :param spark_config: Dictionary of config key-value pairs.
-    :return: A tuple of references to the Spark session, logger and
-        config dict (only if available).
-    """
 
     # ...
 
@@ -173,6 +135,74 @@ spark, log, config = start_spark(
 Will use the arguments provided to `start_spark` to setup the Spark job if executed from an interactive console session or debugger, but will look for the same arguments sent via `spark-submit` if that is how the job has been executed.
 
 ## Automated Testing
+What's to test
+What is in the left box is the part that is accessible locally and could be used to attach a debugger. Since it is most limited to JVM calls there is really nothing there that should of interest for you, unless you're actually modifying PySpark itself.
+What is on the right happens remotely and depending on a cluster manager you use is pretty much a black-box from an user perspective. Moreover there are many situations when Python code on the right does nothing more than calling JVM API. 
+This is was the bad part. The good part is that most of the time there should be no need for remote debugging. Excluding accessing objects like TaskContext, which can be easily mocked, every part of your code should be easily runnable / testable locally without using Spark instance whatsoever.
+
+Functions you pass to actions / transformations take standard and predictable Python objects and are expected to return standard Python objects as well. What is also important these should be side effects free
+So at the end of the day you have to parts of your program - a thin layer that can be accessed interactively and tested based purely on inputs / outputs and "computational core" which doesn't require Spark for testing / debugging.
+
+
+python3 -m pip install requirements.txt
+pyspark == 2.4.5
+ipython
+ipykernel == 5.3.4
+jupyter == 1.0.0
+pandas == 1.0.5
+pyarrow == 1.0.1
+pytest
+pytest-spark
+farsante == 0.1.0
+quinn == 0.8.0
+chispa == 0.4.0
+ceja
+toree ==0.20
+jupyter_client==4.4.0
+tornado==5.0
+
+pyspark-debug-test/tests/test_etl_job.py
+cd tests
+pytest
+passed
+
+
+EDA
+jupyter notebook
+
+pypython3 -m pip install --upgrade pip
+python3 -m pip install jupyter
+pip3 install toree==0.2.0 
+
+toree support pyspark only on 0.2.0
+https://toree.apache.org/docs/current/user/quick-start/
+
+but can't run pyspar, with error  python 2
+
+export PYSPARK_PYTHON=python3.6
+PYSPARK_PYTHON=/usr/bin/python3
+
+
+
+jupyter toree install --spark_home /opt/spark/ --interpreters=Scala,PySpark,SQL --user
+
+jupyter notebook
+
+/home/u18/pyspark-debug-test/pysparktestingexample/notebooks/scala_parquet.ipynb
+
+scala is ok, for check data source, and do some critical UDF
+
+
+
+
+
+ |   Pipfile
+ |   Pipfile.lock
+
+
+no need for pipenv peotry 
+poetry install 
+peotry run pytest
 
 In order to test with Spark, we use the `pyspark` Python package, which is bundled with the Spark JARs required to programmatically start-up and tear-down a local Spark instance, on a per-test-suite basis (we recommend using the `setUp` and `tearDown` methods in `unittest.TestCase` to do this once per test-suite). Note, that using `pyspark` to run Spark is an alternative way of developing with Spark as opposed to using the PySpark shell or `spark-submit`.
 

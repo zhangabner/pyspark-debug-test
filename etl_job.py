@@ -36,7 +36,7 @@ Zeppelin notebook).
 from pyspark.sql import Row
 from pyspark.sql.functions import col, concat_ws, lit
 
-# from dependencies.spark import start_spark
+from dependencies.spark import start_spark
 
 
 def main():
@@ -54,10 +54,20 @@ def main():
 
     # execute ETL pipeline
     data = extract_data(spark)
-    data_transformed = transform_data(data, config['steps_per_floor'])
+    data_transformed = transform_data(data, 21)
     load_data(data_transformed)
+    data=(
+        data
+        .select(
+            col('id'),col('first_name'),col('second_name'),col('floor'),
+               (col('floor') * 10 ).alias('age')
+               )
+               )
+    data.show(1)
+    load_data_parquet(data,filepath="/home/u18/test_data/employees_age")
 
     # log the success and terminate Spark application
+    # create_test_data(spark)
     log.warn('test_etl_job is finished')
     spark.stop()
     return None
@@ -72,7 +82,7 @@ def extract_data(spark):
     df = (
         spark
         .read
-        .parquet('tests/test_data/employees'))
+        .parquet('/home/u18/pyspark-debug-test/tests/test_data/employees'))
 
     return df
 
@@ -110,8 +120,20 @@ def load_data(df):
      .csv('loaded_data', mode='overwrite', header=True))
     return None
 
+def load_data_parquet(df,filepath="/home/u18/test_data/employees"):
+    """Collect data locally and write to CSV.
 
-def create_test_data(spark, config):
+    :param df: DataFrame to print.
+    :return: None
+    """
+    (df
+     .coalesce(1)
+     .write
+     .parquet(filepath, mode='overwrite'))
+    return None
+
+
+def create_test_data(spark):
     """Create test data.
 
     This function creates both both pre- and post- transformation data
@@ -137,16 +159,16 @@ def create_test_data(spark, config):
     (df
      .coalesce(1)
      .write
-     .parquet('tests/test_data/employees', mode='overwrite'))
+     .parquet('/home/u18/test_data/employees', mode='overwrite'))
 
     # create transformed version of data
-    df_tf = transform_data(df, config['steps_per_floor'])
+    df_tf = transform_data(df, 21)
 
     # write transformed version of data to Parquet
     (df_tf
      .coalesce(1)
      .write
-     .parquet('tests/test_data/employees_report', mode='overwrite'))
+     .parquet('/home/u18/test_data/employees_report', mode='overwrite'))
 
     return None
 

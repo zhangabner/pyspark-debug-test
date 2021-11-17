@@ -49,74 +49,23 @@ This module contains unit tests for the transformation steps of the ETL
 job defined in etl_job.py. It makes use of a local version of PySpark
 that is bundled with the PySpark package.
 """
-import unittest
-
 import json
+import unittest
+from os import environ, listdir, path
 
+from pyspark import SparkFiles
+from pyspark.sql import SparkSession
 from pyspark.sql.functions import mean
 
 # from dependencies.spark import start_spark
 from etl_job import transform_data
-
-from os import environ, listdir, path
-import json
-from pyspark import SparkFiles
-from pyspark.sql import SparkSession
 
 # from dependencies import logging
 
 
 def start_spark(app_name='my_spark_app', master='local[*]', jar_packages=[],
                 files=[], spark_config={}):
-    """Start Spark session, get Spark logger and load config files.
 
-    Start a Spark session on the worker node and register the Spark
-    application with the cluster. Note, that only the app_name argument
-    will apply when this is called from a script sent to spark-submit.
-    All other arguments exist solely for testing the script from within
-    an interactive Python console.
-
-    This function also looks for a file ending in 'config.json' that
-    can be sent with the Spark job. If it is found, it is opened,
-    the contents parsed (assuming it contains valid JSON for the ETL job
-    configuration) into a dict of ETL job configuration parameters,
-    which are returned as the last element in the tuple returned by
-    this function. If the file cannot be found then the return tuple
-    only contains the Spark session and Spark logger objects and None
-    for config.
-
-    The function checks the enclosing environment to see if it is being
-    run from inside an interactive console session or from an
-    environment which has a `DEBUG` environment variable set (e.g.
-    setting `DEBUG=1` as an environment variable as part of a debug
-    configuration within an IDE such as Visual Studio Code or PyCharm.
-    In this scenario, the function uses all available function arguments
-    to start a PySpark driver from the local PySpark package as opposed
-    to using the spark-submit and Spark cluster defaults. This will also
-    use local module imports, as opposed to those in the zip archive
-    sent to spark via the --py-files flag in spark-submit.
-
-    :param app_name: Name of Spark app.
-    :param master: Cluster connection details (defaults to local[*]).
-    :param jar_packages: List of Spark JAR package names.
-    :param files: List of files to send to Spark cluster (master and
-        workers).
-    :param spark_config: Dictionary of config key-value pairs.
-    :return: A tuple of references to the Spark session, logger and
-        config dict (only if available).
-    """
-
-    # detect execution environment
-    # flag_repl = not(hasattr(__main__, '__file__'))
-    flag_debug = 'DEBUG' in environ.keys()
-
-    # if not (flag_repl or flag_debug):
-    #     # get Spark session factory
-    #     spark_builder = (
-    #         SparkSession
-    #         .builder
-    #         .appName(app_name))
-    # else:
     if True:
         # get Spark session factory
         spark_builder = (
@@ -169,6 +118,8 @@ input_data = (
     .read
     .parquet(test_data_path + 'employees'))
 
+data_transformed = transform_data(input_data, 21)
+
 expected_data = (
     spark
     .read
@@ -182,7 +133,7 @@ expected_avg_steps = (
     .collect()[0]
     ['avg_steps_to_desk'])
 # act
-data_transformed = transform_data(input_data, 21)
+
 
 
 

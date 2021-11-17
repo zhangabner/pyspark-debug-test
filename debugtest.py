@@ -15,7 +15,15 @@ test_data = [
         "Age": 41
     }
 ]
+app_name='my_spark_app'
+master='local[*]'
 
-spark = SparkSession.builder.getOrCreate()
+spark_builder = (
+    SparkSession
+    .builder
+    .master(master)
+    .appName(app_name))
+
+spark = spark_builder.getOrCreate()
 test_df = spark.createDataFrame(map(lambda x: Row(**x), test_data))
 test_df.show(1)
