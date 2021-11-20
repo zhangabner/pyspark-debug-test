@@ -56,14 +56,17 @@ def main():
     data = extract_data(spark)
     data_transformed = transform_data(data, 21)
     load_data(data_transformed)
-    data=(
+
+    data = (
         data
         .select(
-            col('id'),col('first_name'),col('second_name'),col('floor'),
-               (col('floor') * 10 ).alias('age')
-               )
-               )
+            col('id'), col('first_name'), col('second_name'), col('floor'),
+               (col('floor') * 10).alias('age')
+        )
+    )
+    
     data.show(1)
+
     load_data_parquet(data,filepath="/home/u18/test_data/employees_age")
 
     # log the success and terminate Spark application
@@ -131,47 +134,6 @@ def load_data_parquet(df,filepath="/home/u18/test_data/employees"):
      .write
      .parquet(filepath, mode='overwrite'))
     return None
-
-
-def create_test_data(spark):
-    """Create test data.
-
-    This function creates both both pre- and post- transformation data
-    saved as Parquet files in tests/test_data. This will be used for
-    unit tests as well as to load as part of the example ETL job.
-    :return: None
-    """
-    # create example data from scratch
-    local_records = [
-        Row(id=1, first_name='Dan', second_name='Germain', floor=1),
-        Row(id=2, first_name='Dan', second_name='Sommerville', floor=1),
-        Row(id=3, first_name='Alex', second_name='Ioannides', floor=2),
-        Row(id=4, first_name='Ken', second_name='Lai', floor=2),
-        Row(id=5, first_name='Stu', second_name='White', floor=3),
-        Row(id=6, first_name='Mark', second_name='Sweeting', floor=3),
-        Row(id=7, first_name='Phil', second_name='Bird', floor=4),
-        Row(id=8, first_name='Kim', second_name='Suter', floor=4)
-    ]
-
-    df = spark.createDataFrame(local_records)
-
-    # write to Parquet file format
-    (df
-     .coalesce(1)
-     .write
-     .parquet('/home/u18/test_data/employees', mode='overwrite'))
-
-    # create transformed version of data
-    df_tf = transform_data(df, 21)
-
-    # write transformed version of data to Parquet
-    (df_tf
-     .coalesce(1)
-     .write
-     .parquet('/home/u18/test_data/employees_report', mode='overwrite'))
-
-    return None
-
 
 # entry point for PySpark ETL application
 if __name__ == '__main__':
